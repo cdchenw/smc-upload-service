@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: smc-upload-service
+
+server:
+  port: 3005
