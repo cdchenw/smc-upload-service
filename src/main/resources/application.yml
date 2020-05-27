@@ -1,6 +1,24 @@
+eureka:
+  instance:
+    lease-expiration-duration-in-seconds: 30
+    lease-renewal-interval-in-seconds: 10
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:3001/eureka/
+
 spring:
   application:
     name: smc-upload-service
+  jpa:
+    show-sql: true
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:33061/smcdb
+    username: admin
+    password: passw0rd
 
 server:
   port: 3005
+  servlet:
+    context-path: /api
+    
+debug: false
