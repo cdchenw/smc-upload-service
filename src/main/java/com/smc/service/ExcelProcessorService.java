@@ -4,19 +4,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.poi.ss.usermodel.Cell;
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.smc.repository.StockPriceRepository;
+import com.smc.vo.StockPriceVo;
 
 
 
@@ -37,6 +42,9 @@ TOSYY1 			BSE				348.91					2019/6/8 11:10:00
 * @date May 12, 2020
 *
 */
+
+@Service
+@Transactional
 public class ExcelProcessorService {
 	
 	private static final Logger logger = LoggerFactory.getLogger(ExcelProcessorService.class);
@@ -44,9 +52,10 @@ public class ExcelProcessorService {
 	@Autowired
 	private StockPriceRepository stockPriceRepository;
 	
-	public long processExcel(MultipartFile file) throws IOException {
-		long successRs = 0;
-		long failedRs = 0;
+	public Map<String, List<StockPriceVo>> processExcel(MultipartFile file) throws IOException {
+		Map<String, List<StockPriceVo>> rsMap =new HashedMap<String, List<StockPriceVo>>();
+		List<StockPriceVo> successList =new ArrayList<StockPriceVo>();
+		List<StockPriceVo> failedList =new ArrayList<StockPriceVo>();
 		InputStream iputStream = file.getInputStream();
 		try {
 			// Create Workbook instance holding reference to .xlsx file
@@ -58,18 +67,23 @@ public class ExcelProcessorService {
 			Iterator<Row> rowIterator = sheet.iterator();
 			long index = 0;
 			while (rowIterator.hasNext()) {
+				Row row = rowIterator.next();
 				if (index > 0) {
-					Row row = rowIterator.next();
+					StockPriceVo spVo =new StockPriceVo();
 					try {
 						String stockCode = row.getCell(0).getStringCellValue();// stock code
 						String stockExchangeCode = row.getCell(1).getStringCellValue();//exchange short name
 						BigDecimal price = new BigDecimal(row.getCell(2).getNumericCellValue());// stock price
-						Timestamp openDate = Timestamp.valueOf(row.getCell(0).getStringCellValue());// transaction date time
+						Timestamp openDate = new Timestamp(row.getCell(3).getDateCellValue().getTime());// transaction date time
 						this.persistRow(price, openDate, stockCode, stockExchangeCode);
-						successRs++;
+						spVo.setStockCode(stockCode);
+						spVo.setStockExchange(stockExchangeCode);
+						spVo.setPricePerShare(price);
+						spVo.setDate(openDate);
+						successList.add(spVo);
 					}catch(Exception e) {
 						logger.error("import row failed", e.getMessage());
-						failedRs++;
+						failedList.add(spVo);
 					}
 				}
 				index++;
@@ -78,7 +92,9 @@ public class ExcelProcessorService {
 		} catch (Exception e) {
 			logger.error("Exception when parse excel. terminate process", e);
 		}
-		return successRs;
+		rsMap.put("SUCCESS", successList);
+		rsMap.put("FAILED", failedList);
+		return rsMap;
 	}
 	
 	

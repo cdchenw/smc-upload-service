@@ -3,17 +3,18 @@ package com.smc.repository;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
-import javax.persistence.Entity;
 import javax.transaction.Transactional;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import com.smc.model.StockPrice;
+
 // This will be AUTO IMPLEMENTED by Spring into a Bean called userRepository
 // CRUD refers Create, Read, Update, Delete
 
-public interface StockPriceRepository extends CrudRepository<Entity, String> {
+public interface StockPriceRepository extends CrudRepository<StockPrice, String> {
 	
 	@Modifying
 	@Transactional
